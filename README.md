@@ -10,6 +10,10 @@ Requires contents of `support.py`.
 ## To run
 Run `mazesystem.py`.
 
+## Use as modules
+All functionality is coded as class items in `mazesystem.py` and may be imported to any python file and used.
+Includes maze, graphic, walls, and navigation class items.
+
 ## Samples
 ![Sample maze](sample_images/sample_blank.png)
 
