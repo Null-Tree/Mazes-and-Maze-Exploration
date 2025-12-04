@@ -176,6 +176,7 @@ class Maze2D:
 class Graphic:
     def __init__(self,maze:Maze2D,res=10,padding=30,line_width=1,bg="light grey",ani_walls=False,ani_cells=False,show_text=True):
         """creates the graphic system"""
+        self.prev_t=time.time()
         self.maze=maze
         self.res=res
         self.padding=padding
@@ -236,6 +237,16 @@ class Graphic:
         s="\n".join(self.text_list)
         self.text_str_var.set(s)
 
+    def refresh(self,force=False):
+        # too many items to refresh, no point forcing refresh rate as root.update takes too long
+        # self.prev_t
+        # self.t=time.time()
+        # d=self.t-self.prev_t
+
+        # self.fps=500
+        # if force or d >1/self.fps:
+        #     self.prev_t=self.t
+        self.root.update()
 
     def get_pixel_xy(self,cord:Cord):
         """gets onscreen pixel tuple pf any in maze Cord"""
@@ -275,7 +286,7 @@ class Graphic:
             # animate
             # print(self.animate["walls"])
             if self.animate["walls"]:
-                self.root.update()
+                self.refresh()
     
     def draw_line(self,cord1:Cord,cord2:Cord,color,width=None):
         """draws a line between cordinates"""
@@ -323,7 +334,7 @@ class Graphic:
             g_id_l.append(0)    
 
         if self.animate["cells"]:
-            self.root.update()
+            self.refresh()
         
         if not permanent:
             self.cell_graphic_ids[c.i1,c.i2]=g_id_l
@@ -347,7 +358,7 @@ class Graphic:
 
         self.cell_graphic_ids[i1,i2]=[0,0]
         if self.animate["cells"]:
-            self.root.update()
+            self.refresh()
 
     
     def clear_all(self):
@@ -363,7 +374,7 @@ class Graphic:
             else:
                 # draw it with solid fill cause invalid space
                 self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0)
-        self.root.update()
+        self.refresh(force=True)
 
     
 

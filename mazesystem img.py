@@ -254,13 +254,13 @@ class Graphic:
     def save_image(self):
         self.image.save(self.image_path)
 
-    def refresh(self):
+    def refresh(self,force=False):
         self.prev_t
         self.t=time.time()
         d=self.t-self.prev_t
 
         self.fps=50
-        if d >1/self.fps:
+        if force or d >1/self.fps:
             self.prev_t=self.t
             self.photoImage_obj =ImageTk.PhotoImage(self.image)
             self.image_display.config(image=self.photoImage_obj)
@@ -445,7 +445,7 @@ class Graphic:
             else:
                 # draw it with solid fill cause invalid space
                 self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0)
-        self.refresh()
+        self.refresh(force=True)
 
     
 
@@ -498,7 +498,7 @@ class Navigation:
         """draws the start and end of maze onto graph"""
         self.maze.graphic.draw_on_cell(self.start,"circle","red",prop=.9)
         self.maze.graphic.draw_on_cell(self.end,"circle","green",prop=.9) 
-        self.maze.graphic.refresh()
+        self.maze.graphic.refresh(force=True)
     
     def mark_as_explored(self,cord:Cord,color):
         """mark a cell as explored in path matrix and highlights it as marked"""
@@ -861,7 +861,7 @@ class Navigation:
         self.maze.graphic.log(f"Double A* dist: {dist}  after {n_it} steps")
             
         self.draw_start_end()
-        self.maze.graphic.refresh()
+        self.maze.graphic.refresh(force=True)
 
 
 
@@ -903,7 +903,7 @@ def main():
     m=Maze2D(shape,res,padding,line_width,bg_color,ani_walls,ani_cells,start,end,draw_explore,show_text)
 
     
-    
+    ask()
     m.graphic.render_maze()
     
 
