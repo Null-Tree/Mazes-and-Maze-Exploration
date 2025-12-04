@@ -1,25 +1,5 @@
 from support import *
 
-import numpy as np
-import tkinter as tk
-import time
-from matplotlib import colors
-import random
-from dataclasses import dataclass
-import math
-import os
-
-from PIL import Image,ImageDraw, ImageFont, ImageOps,ImageTk #Pillow library
-
-def rand_index(len):
-    return random.randint(0,len-1)
-
-def ask(t="press enter in terminal to continue:"):
-    """used to stagger actions"""
-    i=input(t)
-    print("continuing...\n")
-
-
 class Cord:
     def __init__(self,tup,mode:str="i1i2"):
         """input cordinate as a tuple eg Cord((1,2),mode="xy")"""
@@ -151,40 +131,12 @@ class Walls2D:
         if d.y:
             self.hori_walls[c_wall.i_tup]=v
 
-class Maze2D:
-    def __init__(self,xyshape,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True):
-        """
-        initalises a maze system
-        
-        Args:
-            xyshape (tuple): (x,y) maze will be x by y cells
-            res (int): pixel resolution for every cell of a maze
-            padding (int): pixel padding around the entire maze
-            line_width (int): pixel width of maze wall lines
-            bg (str): color of background
-            ani_walls (bool): do you want the creation of walls to be animated
-            ani_cells (bool): do you want the animation of maze exploration animated
-            start (Cord): the cord for start of the maze  -> will default to random cord
-            end (Cord): the end of the maze -> will default to random cord
-            draw_explore: (bool): draw the highlighting for maze exploration of maze explore algorithm
-            show_text (bool): choose if text label showing loading and algorithm performance information will be displayed
-        
-        """
-        
-        dtype="i1"
-        # true if cell is a valid space, false if that space is filled
-        # ndim=len(shape)
-        ishape=xyshape[::-1]
-        self.cells=np.ones(ishape,dtype)
-        self.walls=Walls2D(self.cells)
-        self.graphic=Graphic(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text)
-        self.navigation=Navigation(self,start,end,draw_explore)
-    
-    def get_rand_cord(self):
-        return Cord(( rand_index(self.cells.shape[0]) , rand_index(self.cells.shape[0]) ))
 
-class Graphic:
-    def __init__(self,maze:Maze2D,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,show_text=True):
+
+
+
+class Graphic_IMG:
+    def __init__(self,maze,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,show_text=True):
         """creates the graphic system"""
         self.prev_t=time.time()
         self.maze=maze
@@ -453,6 +405,251 @@ class Graphic:
     def start(self):
         """start the tk item"""
         self.root.mainloop()
+
+class Graphic_TK:
+    def __init__(self,maze,res=10,padding=30,line_width=1,bg="light grey",ani_walls=False,ani_cells=False,show_text=True):
+        """creates the graphic system"""
+        self.prev_t=time.time()
+        self.maze=maze
+        self.res=res
+        self.padding=padding
+
+        self.root = tk.Tk()
+        self.root.title("Maze System by NullTree")
+        self.root.configure(bg=bg)
+
+        self.lines_of_text=6
+        self.font_size=14
+        self.show_text=show_text
+
+        xdim,ydim=maze.cells.shape[::-1]
+        self.bg=bg
+        
+        canvas_width=xdim*res+2*padding
+        canvas_height=ydim * res+2*padding
+        
+        self.canvas = tk.Canvas(self.root, width=canvas_width, height=canvas_height,background=bg)
+        self.canvas.pack()
+
+        if show_text:
+            self.root.geometry(f"{canvas_width}x{canvas_height+self.lines_of_text*self.font_size}")
+            # self.root.geometry(f"{canvas_width}x{canvas_height+padding*2+self.lines_of_text*self.font_size}")
+            self.text_str_var=tk.StringVar()
+            self.text_list=[]
+            
+            self.label=tk.Label(self.root,textvariable=self.text_str_var)
+            self.label.config(font =("Courier", self.font_size))
+            self.label.pack()
+            self.label.config(bg=bg)
+
+        self.linewidth=line_width
+        self.animate={"walls":bool(ani_walls),"cells":bool(ani_cells)}
+
+        self.cell_g_id_len=2
+
+        
+        self.cell_graphic_ids=np.zeros(tuple_append(maze.cells.shape,self.cell_g_id_len),dtype="i")
+    def reset_maze(self):
+        self.clear_all()
+        self.render_maze()
+    def log(self,*args,end="\n"):
+        print(*args)
+        
+        if not self.show_text:
+            return
+        newline=""
+        for a in args:
+            newline+=str(a)
+        self.text_list.append(newline)
+            
+        s="\n".join(self.text_list)
+        self.text_str_var.set(s)
+    
+    def remove_log(self,i=-1):
+        if not self.show_text:
+            return
+        self.text_list.pop(i)
+        s="\n".join(self.text_list)
+        self.text_str_var.set(s)
+
+    def refresh(self,force=False):
+        # too many items to refresh, no point forcing refresh rate as root.update takes too long
+        # self.prev_t
+        # self.t=time.time()
+        # d=self.t-self.prev_t
+
+        # self.fps=500
+        # if force or d >1/self.fps:
+        #     self.prev_t=self.t
+        self.root.update()
+
+    def get_pixel_xy(self,cord:Cord):
+        """gets onscreen pixel tuple pf any in maze Cord"""
+        c=cord
+        return (c.x * self.res + self.padding, c.y*self.res+self.padding)
+    
+    def draw_wall(self,cord:Cord,w_side):
+        """draws a wall"""
+
+        res=self.res
+        padding = self.padding
+        canvas=self.canvas
+
+        x,y=self.get_pixel_xy(cord)
+        # this is top left of the cell
+        adj=self.linewidth//2
+        x0=x
+        y0=y
+        x1=x+res
+        y1=y+res
+
+        if w_side == "r":            
+            canvas.create_line(x1,y0-adj,x1,y1+adj,width=self.linewidth)
+        elif w_side == "l":
+            canvas.create_line(x0,y0-adj,x0,y1+adj,width=self.linewidth)
+        elif w_side == "u":
+            canvas.create_line(x0-adj,y0,x1+adj,y0,width=self.linewidth)
+        elif w_side == "d":
+            canvas.create_line(x0-adj,y1,x1+adj,y1,width=self.linewidth)
+    
+    def draw_cell_walls(self,cord:Cord):
+        """draws allwalls for a given cell"""
+        wall_l=self.maze.walls.get_cell_walls(cord)
+        for w_side in wall_l:
+            self.draw_wall(cord,w_side)
+
+            # animate
+            # print(self.animate["walls"])
+            if self.animate["walls"]:
+                self.refresh()
+    
+    def draw_line(self,cord1:Cord,cord2:Cord,color,width=None):
+        """draws a line between cordinates"""
+        if not width:
+            width=self.linewidth
+        x0,y0=self.get_pixel_xy(cord1)
+        x1,y1=self.get_pixel_xy(cord2)
+        self.canvas.create_line(x0,y0,x1,y1,width=width,fill=color)
+            
+    def draw_on_cell(self,cord:Cord,shape="square",fill="light blue",prop=.8,permanent=False,outline=True,rpad=None):
+        """draws a shape in a cell"""
+        self.clear_cell(cord)
+
+        c=cord
+        p=(1-prop)/2
+        # tl=Cord((c.i1+p,c.i2+p)) 
+        # br=Cord((c.i1-p+1,c.i2-p+1))
+        # print(tl,br)
+        tl=c+Cord((p,p)) 
+        br=c-Cord((p,p))   +Cord((1,1))
+        # print(tl,br)
+        # print()
+        x0,y0=self.get_pixel_xy(tl)
+        x1,y1=self.get_pixel_xy(br)
+        if rpad==None:
+            rpad=self.linewidth//2+2
+        x0+=rpad
+        y0+=rpad
+        x1-=rpad
+        y1-=rpad
+
+        width=self.linewidth if outline else 0 
+
+        g_id_l=[]
+        if shape=="square":
+            g_id_l.append(self.canvas.create_rectangle(x0,y0,x1,y1,fill=fill,width=width))
+            
+        if shape=="cross":
+            g_id_l.append(self.canvas.create_line(x0,y0,x1,y1,width=self.linewidth))
+            g_id_l.append(self.canvas.create_line(x1,y0,x0,y1,width=self.linewidth))
+        if shape=="circle":
+            g_id_l.append(self.canvas.create_oval(x0,y0,x1,y1,fill=fill,width=width))
+
+        while len(g_id_l)<self.cell_g_id_len:
+            g_id_l.append(0)    
+
+        if self.animate["cells"]:
+            self.refresh()
+        
+        if not permanent:
+            self.cell_graphic_ids[c.i1,c.i2]=g_id_l
+
+    def clear_all_cells(self):
+        """clears all cell graphics"""
+        for rc,v in np.ndenumerate(self.maze.cells):
+            self.clear_cell(Cord(rc))
+
+
+    def clear_cell(self,cord):
+        """clear cell graphic for given cell"""
+        i1,i2=cord.i1,cord.i2
+
+        # print(self.cell_graphic_ids[i1,i2])
+        for fg_id in self.cell_graphic_ids[i1,i2]:
+            if fg_id:
+                g_id=int(fg_id)
+                # print("delete",g_id)
+                self.canvas.delete(int(g_id))
+
+        self.cell_graphic_ids[i1,i2]=[0,0]
+        if self.animate["cells"]:
+            self.refresh()
+
+    
+    def clear_all(self):
+        """clears canvas"""
+        self.canvas.delete("all")
+        
+
+    def render_maze(self):
+        """renders the maze walls"""
+        for rcord, v in np.ndenumerate(self.maze.cells):
+            if v:
+                self.draw_cell_walls(Cord(rcord))
+            else:
+                # draw it with solid fill cause invalid space
+                self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0)
+        self.refresh(force=True)
+
+    
+
+    def start(self):
+        """start the tk item"""
+        self.root.mainloop()
+    
+
+
+class Maze2D:
+    def __init__(self,xyshape,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG):
+        """
+        initalises a maze system
+        
+        Args:
+            xyshape (tuple): (x,y) maze will be x by y cells
+            res (int): pixel resolution for every cell of a maze
+            padding (int): pixel padding around the entire maze
+            line_width (int): pixel width of maze wall lines
+            bg (str): color of background
+            ani_walls (bool): do you want the creation of walls to be animated
+            ani_cells (bool): do you want the animation of maze exploration animated
+            start (Cord): the cord for start of the maze  -> will default to random cord
+            end (Cord): the end of the maze -> will default to random cord
+            draw_explore: (bool): draw the highlighting for maze exploration of maze explore algorithm
+            show_text (bool): choose if text label showing loading and algorithm performance information will be displayed
+        
+        """
+        
+        dtype="i1"
+        # true if cell is a valid space, false if that space is filled
+        # ndim=len(shape)
+        ishape=xyshape[::-1]
+        self.cells=np.ones(ishape,dtype)
+        self.walls=Walls2D(self.cells)
+        self.graphic=graphic_cls(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text)
+        self.navigation=Navigation(self,start,end,draw_explore)
+    
+    def get_rand_cord(self):
+        return Cord(( rand_index(self.cells.shape[0]) , rand_index(self.cells.shape[0]) ))
     
 
 
@@ -872,75 +1069,4 @@ class Navigation:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-# ####################################################
-
-def main():
-
-    # this doesnt even work on this
-    # seed=random.randint(0,9999)
-    # random.seed=seed
-    # print("seed=",random.seed)
-
-    shape=(120,60)
-    res=10
-    padding=30
-    line_width=1
-    bg_color="grey"
-    ani_walls=False
-    ani_cells=True
-    start=Cord((2,2))
-    end=Cord(shape,"xy")-Cord((3,3))
-    draw_explore=True
-    show_text=True
-
-    m=Maze2D(shape,res,padding,line_width,bg_color,ani_walls,ani_cells,start,end,draw_explore,show_text)
-
-    
-    ask()
-    m.graphic.render_maze()
-    
-
-    # create walls
-    
-    m.navigation.DFS_wallmaker()
-    # ask()
-    time.sleep(3)
-    
-    
-    # runs bfs
-    m.graphic.reset_maze()
-    m.navigation.Xfs("B")
-    # ask()
-    time.sleep(3)
-
-    # runs A*
-    m.graphic.reset_maze()
-    m.graphic.render_maze()
-    m.navigation.A_star()
-    # ask()
-    time.sleep(3)
-    
-    # runs double A*
-    m.graphic.reset_maze()
-    m.graphic.render_maze()
-    m.navigation.double_A_star()
-    
-
-
-
-    m.graphic.start()
-
-if __name__=="__main__":
-    main()
 

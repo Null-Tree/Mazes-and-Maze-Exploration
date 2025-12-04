@@ -1,4 +1,13 @@
+import numpy as np
+import tkinter as tk
+import time
+from matplotlib import colors
+import random
+from dataclasses import dataclass
+import math
+import os
 
+from PIL import Image,ImageDraw, ImageFont, ImageOps,ImageTk #Pillow library
 
 def pprint_2dArray(l,align='r'):
     """prettily prints any 2d array, breaks on multiline"""
@@ -48,3 +57,13 @@ class PriorityQueue(list):
             return self.pop(0)[0]
         if mode=="max":
             return self.pop(-1)[0]
+        
+
+
+def rand_index(len):
+    return random.randint(0,len-1)
+
+def ask(t="press enter in terminal to continue:"):
+    """used to stagger actions"""
+    i=input(t)
+    print("continuing...\n")
