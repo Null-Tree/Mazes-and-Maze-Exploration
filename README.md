@@ -7,11 +7,12 @@ Such that the paths of the maze form a tree (there is only 1 possible path betwe
 
 Requires contents of `support.py`.
 
-## To run
-Run `mazesystem.py`.
+## Versions
+`mazesystem.py` uses tkinker canvas items to render (much slower)
+`mazesystem img.py` uses PIL to render images (much much faster).
 
 ## Use as modules
-All functionality is coded as class items in `mazesystem.py` and may be imported to any python file and used.
+All functionality is coded as class items in the .py files and may be imported to any python file and used.
 Includes maze, graphic, walls, and navigation class items.
 
 ## Samples
