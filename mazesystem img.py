@@ -260,6 +260,7 @@ class Graphic:
         d=self.t-self.prev_t
 
         self.fps=50
+        # print(d)
         if force or d >1/self.fps:
             self.prev_t=self.t
             self.photoImage_obj =ImageTk.PhotoImage(self.image)
@@ -487,6 +488,8 @@ class Navigation:
     #     pc_copy[self.start.i_tup]=3
     #     pc_copy[self.end.i_tup]=4      
     #     return pc_copy
+
+    
 
     def path_reset(self):
         """reset path tracking amtrix"""
@@ -797,9 +800,10 @@ class Navigation:
         n_it=0
         self.maze.graphic.log("Running Double A*")
         while not found:
-            n_it+=1
+            
             
             for side in [0,1]:
+                n_it+=1
                 my_pn=5+side
                 other_pn=6-side
                 current=current_l[side]
