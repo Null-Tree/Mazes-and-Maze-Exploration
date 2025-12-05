@@ -1,7 +1,7 @@
 
 
-from support import *
-from classes import *
+from modules.support import *
+from modules.classes import *
 
 def main():
 
@@ -10,33 +10,43 @@ def main():
     # random.seed=seed
     # print("seed=",random.seed)
 
-    shape=(120,60)
+    xyshape=(120,80)
     res=10
     padding=30
     line_width=1
     bg_color="grey"
     ani_walls=False
     ani_cells=True
-    start=Cord((2,2))
-    end=Cord(shape,"xy")-Cord((3,3))
+    start=None
+    end=None
     draw_explore=True
     show_text=True
     graphic_sys=Graphic_IMG         #Graphic_TK or Graphic_IMG
 
-    m=Maze2D(shape,res,padding,line_width,bg_color,ani_walls,ani_cells,start,end,draw_explore,show_text,graphic_sys)
+    i1i2shape=xyshape[::-1]
+    # 1 means valid cell
+    # cell_M=np.ones(i1i2shape,dtype="i1")
 
+    # make it a circle lol
+    mid=Cord(xyshape,"xy")/2
+
+    cell_M=np_circle(i1i2shape,dtype="i1",center=mid,r=30)
+
+
+    m=Maze2D(cell_M,res,padding,line_width,bg_color,ani_walls,ani_cells,start,end,draw_explore,show_text,graphic_sys)
     
     # ask()
     m.graphic.render_maze()
     
-
+    
+    
     # create walls
     
     m.navigation.DFS_wallmaker()
     # ask()
     time.sleep(3)
     
-    
+    m.graphic.save_image()
     # runs bfs
     m.graphic.reset_maze()
     m.navigation.Xfs("B")
@@ -55,7 +65,6 @@ def main():
     m.graphic.render_maze()
     m.navigation.double_A_star()
     
-
 
 
     m.graphic.start()

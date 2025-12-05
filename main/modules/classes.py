@@ -1,77 +1,10 @@
-from support import *
+from .support import *
 
-class Cord:
-    def __init__(self,tup,mode:str="i1i2"):
-        """input cordinate as a tuple eg Cord((1,2),mode="xy")"""
-        # needs mode cause matrix[i1][i2] is matrix[y][x]
-        if len(tup)!=2:
-            raise Exception("coerd len err")
-        if mode=="i1i2":
-            self.i1,self.i2=tup
-            self.y,self.x=tup
-        if mode=="xy":
-            self.x,self.y=tup
-            self.i2,self.i1=tup
-        self.i_tup=(self.i1,self.i2)
-        # print(self.i1,self.i2,self.x,self.y)
-    
-    def __add__(self,cord2):
-        new=Cord((self.i1+cord2.i1,self.i2+cord2.i2))
-        return new
-    def __sub__(self,cord2):
-        new=Cord((self.i1-cord2.i1,self.i2-cord2.i2))
-        return new
-    def __eq__(self,cord2):
-        if type(cord2)!=Cord:
-            return False
-        if self.i1 == cord2.i1 and self.i2 == cord2.i2:
-            return True
-        return False 
-    
-    def up(self=None):
-        if self==None:
-            self=Cord((0,0))
-        return self+Cord((0,1),"xy")
-    
-    def down(self=None):
-        if self==None:
-            self=Cord((0,0))
-        return self+Cord((0,-1),"xy")
-    
-    def left(self=None):
-        if self==None:
-            self=Cord((0,0))
-        return self+Cord((-1,0),"xy")
-    
-    def right(self=None):
-        if self==None:
-            self=Cord((0,0))
-        return self+Cord((1,0),"xy")
-    def __str__(self):
-        return f"Cord({str(self.i_tup)})"
-
-def tuple_append(tup,v,i=False):
-    l=list(tup)
-    if i :
-        l.insert(i,v)
-    else:
-        l.append(v)
-    return tuple(l)
-
-def manhatten_dist(cord1:Cord,cord2:Cord):
-    """returns manhatten dist"""
-    d=cord1-cord2
-    return (abs(d.x)+abs(d.y))
-
-def euclid_dist(cord1:Cord,cord2:Cord):
-    """returns euclid dist"""
-    d=cord1-cord2
-    return math.sqrt(abs(d.x**2)+abs(d.y**2))
 
 class Walls2D:
     def __init__(self,cells:np.ndarray):
         """creates the wallsystem"""
-        self.mcells=cells
+        self.mcells=cells.view()
         self.reset_walls()
 
                 
@@ -89,15 +22,17 @@ class Walls2D:
         for rcord, v in np.ndenumerate(self.mcells):
             if v ==0: #if cell is not valid, create walls in all dir
                 i1,i2=rcord
+                # print(rcord)
                 self.vert_walls[i1,i2]=1
-                self.vert_walls[i1+1,i2]=1
+                self.vert_walls[i1,i2+1]=1
                 self.hori_walls[i1,i2]=1
-                self.hori_walls[i1,i2+1]=1
+                self.hori_walls[i1+1,i2]=1
     
     def get_cell_walls(self,cord:Cord):
         """obtains all walls surrounding a cell"""
         c=cord
         wl=[]
+        # print(self.vert_walls.shape,self.hori_walls.shape)
         if self.vert_walls[c.i1,c.i2]:
             wl.append("l")
         if self.vert_walls[c.i1,c.i2+1]:
@@ -123,14 +58,13 @@ class Walls2D:
         """changes the wall state between 2 cell cords"""
         d=c1-c2
 
-        if d.x and d.y:
+        if d.x != 0 and d.y !=0:
             raise Exception("trying to create diagonal wall")
         c_wall=Cord((max(c1.x,c2.x),max(c1.y,c2.y)),"xy")
         if d.x:
             self.vert_walls[c_wall.i_tup]=v
         if d.y:
             self.hori_walls[c_wall.i_tup]=v
-
 
 
 
@@ -161,7 +95,7 @@ class Graphic_IMG:
 
         # color=self.bg_rgb
         self.image = Image.new(mode="RGB",size=(self.canvas_width,self.canvas_height,),color=self.bg_rgb)
-        self.image_path='py_temporary/mazetemp.png'
+        
         # self.save_image()
         self.photoImage_obj =ImageTk.PhotoImage(self.image)# tk.PhotoImage(self.image)
         
@@ -204,7 +138,32 @@ class Graphic_IMG:
     # def open_image(self):
     
     def save_image(self):
-        self.image.save(self.image_path)
+        self.export_folder='exports'
+        self.export_n_trackerfile='exports/ref.txt'
+
+
+        if not os.path.isdir(self.export_folder):
+            print("Export folder does not exist, created export folder")
+            os.mkdir(self.export_folder)
+
+        try:
+            n=counter_file(self.export_n_trackerfile)
+            print(n)
+        except FileNotFoundError:
+            print("tracker file does not exist, tracker file created")
+            n=1
+            f = open(self.export_n_trackerfile, "w")
+            f.write("1")
+            f.close()
+
+        
+        image_name=f'MazeExport_run{n}.png'
+
+        counter_file(self.export_n_trackerfile,1)
+        self.image.save(self.export_folder+"/"+image_name)
+
+        print("image saved as : ", image_name)
+        # os.startfile(self.export_folder)
 
     def refresh(self,force=False):
         self.prev_t
@@ -324,10 +283,11 @@ class Graphic_IMG:
     
 
             
-    def draw_on_cell(self,cord:Cord,shape="square",fill="light blue",prop=.8,outline=True,rpad=None,clearing=False):
+    def draw_on_cell(self,cord:Cord,shape="square",fill="light blue",prop=.8,outline=True,rpad=None,clearing=False,override_animation=None):
         """draws a shape in a cell"""
+        # print("override: ",override_animation)
         if not clearing:
-            self.clear_cell(cord)
+            self.clear_cell(cord,override_animation=override_animation)
 
         c=cord
         p=(1-prop)/2
@@ -368,17 +328,24 @@ class Graphic_IMG:
             r=x1-x0
             draw.circle(c,radius=r,fill=fill,width=width)
 
-
-        if self.animate["cells"]:
+        if override_animation != None:
+            if override_animation:
+                self.refresh()    
+                return
+            else:
+                return  
+        elif self.animate["cells"]:
+            # print("r")
             self.refresh()
         
 
 
 
 
-    def clear_cell(self,cord):
+    def clear_cell(self,cord,override_animation=None):
         """clear cell graphic for given cell"""
-        self.draw_on_cell(cord,fill=self.bg,prop=1,clearing=True)
+        
+        self.draw_on_cell(cord,fill=self.bg,prop=1,clearing=True,override_animation=override_animation)
 
     
     def clear_all(self):
@@ -397,7 +364,7 @@ class Graphic_IMG:
                 self.draw_cell_walls(Cord(rcord))
             else:
                 # draw it with solid fill cause invalid space
-                self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0)
+                self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0,override_animation=self.animate["walls"])
         self.refresh(force=True)
 
     
@@ -531,9 +498,9 @@ class Graphic_TK:
         x1,y1=self.get_pixel_xy(cord2)
         self.canvas.create_line(x0,y0,x1,y1,width=width,fill=color)
             
-    def draw_on_cell(self,cord:Cord,shape="square",fill="light blue",prop=.8,permanent=False,outline=True,rpad=None):
+    def draw_on_cell(self,cord:Cord,shape="square",fill="light blue",prop=.8,permanent=False,outline=True,rpad=None,override_animation=None):
         """draws a shape in a cell"""
-        self.clear_cell(cord)
+        self.clear_cell(cord,override_animation=override_animation)
 
         c=cord
         p=(1-prop)/2
@@ -568,11 +535,18 @@ class Graphic_TK:
         while len(g_id_l)<self.cell_g_id_len:
             g_id_l.append(0)    
 
-        if self.animate["cells"]:
-            self.refresh()
+
         
         if not permanent:
             self.cell_graphic_ids[c.i1,c.i2]=g_id_l
+        
+        if override_animation != None:
+            if override_animation:
+                self.refresh()
+            else:
+                return
+        elif self.animate["cells"]:
+            self.refresh()
 
     def clear_all_cells(self):
         """clears all cell graphics"""
@@ -608,7 +582,7 @@ class Graphic_TK:
                 self.draw_cell_walls(Cord(rcord))
             else:
                 # draw it with solid fill cause invalid space
-                self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0)
+                self.draw_on_cell(Cord(rcord),fill="black",prop=1,rpad=0,override_animation=self.animate["walls"])
         self.refresh(force=True)
 
     
@@ -620,7 +594,7 @@ class Graphic_TK:
 
 
 class Maze2D:
-    def __init__(self,xyshape,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG):
+    def __init__(self,cell_M,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG):
         """
         initalises a maze system
         
@@ -641,15 +615,14 @@ class Maze2D:
         
         dtype="i1"
         # true if cell is a valid space, false if that space is filled
-        # ndim=len(shape)
-        ishape=xyshape[::-1]
-        self.cells=np.ones(ishape,dtype)
+        self.cells=cell_M
         self.walls=Walls2D(self.cells)
         self.graphic=graphic_cls(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text)
         self.navigation=Navigation(self,start,end,draw_explore)
     
     def get_rand_cord(self):
-        return Cord(( rand_index(self.cells.shape[0]) , rand_index(self.cells.shape[0]) ))
+        return Cord(( rand_index(self.cells.shape[0]) , rand_index(self.cells.shape[1]) ))
+
     
 
 
@@ -657,14 +630,23 @@ class Navigation:
     def __init__(self,maze:Maze2D,start:Cord=None,end:Cord=None,draw_explore=True):
         """create navigation item"""
         self.shape=maze.cells.shape
-        if start==None:
-            start = maze.get_rand_cord()
-        if end==None:
-            end=maze.get_rand_cord()
-            while (end == start):
-                end=maze.get_rand_cord()
-        
         self.maze=maze
+        
+
+        
+
+        if start==None  :
+            # print(start,"try start")
+            start = self.get_rand_valid_cord()
+        if end==None:
+            # print(end,'try end')
+            end = self.get_rand_valid_cord(exclude=[start])
+            
+        if self.maze.cells[start.i_tup] == 0:
+            raise Exception("start is on an invalid square", start.i_tup)
+        if self.maze.cells[end.i_tup] == 0:
+            raise Exception("end is on an invalid square",end.i_tup)
+
         self.start=start
         self.end=end
 
@@ -686,7 +668,42 @@ class Navigation:
     #     pc_copy[self.end.i_tup]=4      
     #     return pc_copy
 
+
     
+    def get_rand_valid_cord(self,exclude:list[Cord]=[]):
+        """picks a random spot, dfs until it finds a valid square"""
+        # 1is valid cell
+        
+
+        self.path_cells=self.maze.cells.copy()
+
+        
+
+        current=self.maze.get_rand_cord()
+        if self.maze.cells[current.i_tup]==1:
+            return current
+        found=False
+
+        stack=[]
+        while not found:
+            self.path_cells[current.i_tup]=2
+            potential_neighbours=[current.up(),current.down(),current.left(),current.right()]
+            random.shuffle(potential_neighbours)
+            for next in potential_neighbours:
+
+                if self.cord_is_inbounds(next) and next not in exclude:
+                    if self.maze.cells[next.i_tup]==1:
+                        return next
+                    if self.path_cells[next.i_tup] not in [2,5]:
+                        stack.append(next)
+                        self.path_cells[next.i_tup]=5
+            
+            if len(stack)<=0:
+                raise Exception("no valid cord found")
+            current=stack.pop(-1)    
+
+
+        
 
     def path_reset(self):
         """reset path tracking amtrix"""
@@ -763,7 +780,9 @@ class Navigation:
         linewidth=int(self.maze.graphic.res*.3)
         linecolor="#8fe493"
 
-        prev_cell_M=np.zeros(tuple_append(self.shape,2),dtype=int)
+        # prev_cell_M=np.zeros(tuple_append(self.shape,2),dtype=int)
+        # -1 means no previous cordinate
+        prev_cell_M=np_arr(tuple_append(self.shape,2),val=-1,datatype=int)
         # has_prev_M=np.zeros(self.shape,dtype=int)
         # current=
 
@@ -801,8 +820,8 @@ class Navigation:
         # print(self.maze.walls.hori_walls)
         for curr_r2ic,_ in np.ndenumerate(self.maze.cells):
             prev_r2ic=prev_cell_M[curr_r2ic]
-            # all nodes apart frmo start will awyas have a rpev
-            if Cord(curr_r2ic) != Cord(self.start.i_tup):
+            # check if prev cordinate exists
+            if prev_r2ic[0] != -1 and prev_r2ic[1] != -1:
                 c1=Cord(prev_r2ic)
                 c2=Cord(curr_r2ic)
                 # print(c1-c2)
@@ -841,7 +860,7 @@ class Navigation:
         linewidth=int(self.maze.graphic.res*.3)
         linecolor="#da96ac"
         
-        prev_cell_M=np.zeros(tuple_append(self.shape,2),dtype=int)
+        prev_cell_M=np_arr(tuple_append(self.shape,2),val=-1,datatype=int)
         current=self.start
         
         l=[]
@@ -877,7 +896,9 @@ class Navigation:
             self.mark_as_explored(current,color=linecolor)
             
             if len(l)==0:
-                self.maze.graphic.log("blocked off")
+                self.maze.graphic.remove_log()
+                self.maze.graphic.log(f"{X}FS is blocked off")
+                self.maze.graphic.refresh(force=True)
                 return
             
             current=l.pop(takei)
@@ -889,7 +910,8 @@ class Navigation:
         while current != self.start:
             prev=prev_cell_M[current.i_tup]
             prev=Cord(prev)
-            # print(prev)
+            if prev.x ==-1 and prev.y == -1:
+                raise Exception("cannot trace back to start")
             self.draw_explore_path(prev,current,"red",linewidth,override=True)
             current=prev
             dist+=1
@@ -907,7 +929,7 @@ class Navigation:
         linewidth=int(self.maze.graphic.res*.3)
         linecolor="#9688d8"
         
-        prev_cell_M=np.zeros(tuple_append(self.shape,2),dtype=int)
+        prev_cell_M=np_arr(tuple_append(self.shape,2),val=-1,datatype=int)
         current=self.start
         
         pqueue=PriorityQueue()
@@ -949,7 +971,9 @@ class Navigation:
             self.mark_as_explored(current,color=linecolor)
             
             if (len(pqueue)==0):
-                self.maze.graphic.log("blocked off")
+                self.maze.graphic.remove_log()
+                self.maze.graphic.log(f"A* is blocked off")
+                self.maze.graphic.refresh(force=True)
                 return
             
             current=pqueue.pq_get()
@@ -963,6 +987,9 @@ class Navigation:
         while current != self.start:
             prev=prev_cell_M[current.i_tup]
             prev=Cord(prev)
+            if prev.x ==-1 and prev.y == -1:
+                raise Exception("cannot trace back to start")
+            
             # print(prev)
             self.draw_explore_path(prev,current,"#4627d1",linewidth,override=True)
             current=prev
@@ -980,8 +1007,9 @@ class Navigation:
         
         linecolor_l=["#71a3c1","#4f6979"]
         
-        
-        prev_cell_M_l=[np.zeros(tuple_append(self.shape,2),dtype=int),np.zeros(tuple_append(self.shape,2),dtype=int)]
+        prev_m_single=np_arr(tuple_append(self.shape,2),val=-1,datatype=int)
+        prev_cell_M_l=[prev_m_single.copy(),prev_m_single.copy()]
+        del prev_m_single
         
         part_start_l=[self.start,self.end]
         current_l=part_start_l.copy()
@@ -1034,7 +1062,9 @@ class Navigation:
                 self.mark_as_explored(current,color=linecolor_l[side])
                 
                 if (len(pqueue_l[side])==0):
-                    self.maze.graphic.log("blocked off")
+                    self.maze.graphic.remove_log()
+                    self.maze.graphic.log(f"Double A* is blocked off")
+                    self.maze.graphic.refresh(force=True)
                     return
                 
                 current_l[side]=pqueue_l[side].pq_get()
