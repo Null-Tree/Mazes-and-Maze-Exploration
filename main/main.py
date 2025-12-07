@@ -10,30 +10,49 @@ def main():
     # random.seed=seed
     # print("seed=",random.seed)
 
-    xyshape=(120,80)
-    res=10
-    padding=30
-    line_width=1
-    bg_color="grey"
-    ani_walls=False
-    ani_cells=True
-    start=None
-    end=None
-    draw_explore=True
-    show_text=True
-    graphic_sys=Graphic_IMG         #Graphic_TK or Graphic_IMG
+    xyshape=(140,60)
+    # xyshape=(120,80)
+    # xyshape=(1000,1000)
+    
+    start=Cord((10,10))
+    end=Cord(xyshape,"xy")-start
+    
+
+
 
     i1i2shape=xyshape[::-1]
     # 1 means valid cell
-    # cell_M=np.ones(i1i2shape,dtype="i1")
+
+    # regular all cells valid maze
+    cell_M=np.ones(i1i2shape,dtype="i1")
 
     # make it a circle lol
-    mid=Cord(xyshape,"xy")/2
+    # mid=Cord(xyshape,"xy")/2
+    # cell_M=np_circle(i1i2shape,dtype="i1",center=mid,r=30)
 
-    cell_M=np_circle(i1i2shape,dtype="i1",center=mid,r=30)
+
+    m=Maze2D(
+                cell_M=cell_M,
+
+                res=10,
+                padding=30,
+                line_width=1,
+
+                bg="grey",
+
+                ani_walls=False,
+                ani_cells=True,
+
+                start=start,
+                end=end,
+
+                draw_explore=True,
+                show_text=True,
+                graphic_cls=Graphic_IMG,
+                render_window=True
+             )
 
 
-    m=Maze2D(cell_M,res,padding,line_width,bg_color,ani_walls,ani_cells,start,end,draw_explore,show_text,graphic_sys)
     
     # ask()
     m.graphic.render_maze()
@@ -58,6 +77,7 @@ def main():
     m.graphic.render_maze()
     m.navigation.A_star()
     # ask()
+    m.graphic.save_image()
     time.sleep(3)
     
     # runs double A*

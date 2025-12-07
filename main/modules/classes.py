@@ -70,7 +70,7 @@ class Walls2D:
 
 
 class Graphic_IMG:
-    def __init__(self,maze,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,show_text=True):
+    def __init__(self,maze,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,show_text=True,render_window=True):
         """creates the graphic system"""
         self.prev_t=time.time()
         self.maze=maze
@@ -92,31 +92,33 @@ class Graphic_IMG:
         self.canvas_height=ydim * res+2*padding
         self.bg_rgb=self.get_rgb(self.bg)
         
-
+        self.render_window=render_window
         # color=self.bg_rgb
         self.image = Image.new(mode="RGB",size=(self.canvas_width,self.canvas_height,),color=self.bg_rgb)
         
-        # self.save_image()
-        self.photoImage_obj =ImageTk.PhotoImage(self.image)# tk.PhotoImage(self.image)
-        
 
-        print(type(self.photoImage_obj))     
-        self.image_display=tk.Label(self.root, image=self.photoImage_obj)
-        self.image_display.pack()
-        
-
-        if show_text:
-            self.root.geometry(f"{self.canvas_width}x{self.canvas_height+self.lines_of_text*self.font_size}")
-            # self.root.geometry(f"{canvas_width}x{canvas_height+padding*2+self.lines_of_text*self.font_size}")
-            self.text_str_var=tk.StringVar()
-            self.text_list=[]
+        if self.render_window:
+            # self.save_image()
+            self.photoImage_obj =ImageTk.PhotoImage(self.image)# tk.PhotoImage(self.image)
             
-            self.label=tk.Label(self.root,textvariable=self.text_str_var)
-            self.label.config(font =("Courier", self.font_size))
-            self.label.pack()
-            self.label.config(bg=bg)
-        
-        
+
+            # print(type(self.photoImage_obj))     
+            self.image_display=tk.Label(self.root, image=self.photoImage_obj)
+            self.image_display.pack()
+            
+
+            if show_text:
+                self.root.geometry(f"{self.canvas_width}x{self.canvas_height+self.lines_of_text*self.font_size}")
+                # self.root.geometry(f"{canvas_width}x{canvas_height+padding*2+self.lines_of_text*self.font_size}")
+                self.text_str_var=tk.StringVar()
+                self.text_list=[]
+                
+                self.label=tk.Label(self.root,textvariable=self.text_str_var)
+                self.label.config(font =("Courier", self.font_size))
+                self.label.pack()
+                self.label.config(bg=bg)
+            
+            
 
         self.linewidth=line_width
         self.animate={"walls":bool(ani_walls),"cells":bool(ani_cells)}
@@ -148,7 +150,7 @@ class Graphic_IMG:
 
         try:
             n=counter_file(self.export_n_trackerfile)
-            print(n)
+            # print(n)
         except FileNotFoundError:
             print("tracker file does not exist, tracker file created")
             n=1
@@ -166,38 +168,41 @@ class Graphic_IMG:
         # os.startfile(self.export_folder)
 
     def refresh(self,force=False):
-        self.prev_t
-        self.t=time.time()
-        d=self.t-self.prev_t
+        if self.render_window:
+            self.prev_t
+            self.t=time.time()
+            d=self.t-self.prev_t
 
-        self.fps=50
-        # print(d)
-        if force or d >1/self.fps:
-            self.prev_t=self.t
-            self.photoImage_obj =ImageTk.PhotoImage(self.image)
-            self.image_display.config(image=self.photoImage_obj)
-            self.root.update()
+            self.fps=50
+            # print(d)
+            if force or d >1/self.fps:
+                self.prev_t=self.t
+                self.photoImage_obj =ImageTk.PhotoImage(self.image)
+                self.image_display.config(image=self.photoImage_obj)
+                self.root.update()
 
 
     def log(self,*args,end="\n"):
         print(*args)
         
-        if not self.show_text:
-            return
-        newline=""
-        for a in args:
-            newline+=str(a)
-        self.text_list.append(newline)
-            
-        s="\n".join(self.text_list)
-        self.text_str_var.set(s)
+        if self.render_window:
+            if not self.show_text:
+                return
+            newline=""
+            for a in args:
+                newline+=str(a)
+            self.text_list.append(newline)
+                
+            s="\n".join(self.text_list)
+            self.text_str_var.set(s)
     
     def remove_log(self,i=-1):
-        if not self.show_text:
-            return
-        self.text_list.pop(i)
-        s="\n".join(self.text_list)
-        self.text_str_var.set(s)
+        if self.render_window:
+            if not self.show_text:
+                return
+            self.text_list.pop(i)
+            s="\n".join(self.text_list)
+            self.text_str_var.set(s)
 
 
     def get_pixel_xy(self,cord:Cord):
@@ -371,7 +376,8 @@ class Graphic_IMG:
 
     def start(self):
         """start the tk item"""
-        self.root.mainloop()
+        if self.render_window:
+            self.root.mainloop()
 
 class Graphic_TK:
     def __init__(self,maze,res=10,padding=30,line_width=1,bg="light grey",ani_walls=False,ani_cells=False,show_text=True):
@@ -594,7 +600,7 @@ class Graphic_TK:
 
 
 class Maze2D:
-    def __init__(self,cell_M,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG):
+    def __init__(self,cell_M,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG,render_window=True):
         """
         initalises a maze system
         
@@ -610,6 +616,8 @@ class Maze2D:
             end (Cord): the end of the maze -> will default to random cord
             draw_explore: (bool): draw the highlighting for maze exploration of maze explore algorithm
             show_text (bool): choose if text label showing loading and algorithm performance information will be displayed
+            graphic_cls (Class): choose which graphical system to use, Graphic_IMG performs better, Graphic_TK is also an option
+            render_window (bool): choose whever to show maze in a window, reccom turn this off for big mazes, eg (1000x1000)
         
         """
         
@@ -617,7 +625,7 @@ class Maze2D:
         # true if cell is a valid space, false if that space is filled
         self.cells=cell_M
         self.walls=Walls2D(self.cells)
-        self.graphic=graphic_cls(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text)
+        self.graphic=graphic_cls(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text,render_window)
         self.navigation=Navigation(self,start,end,draw_explore)
     
     def get_rand_cord(self):
@@ -882,7 +890,7 @@ class Navigation:
                     prev_cell_M[next.i_tup][:] = current.i1,current.i2
                     found=True
                     self.maze.graphic.log("Found End")
-                    break
+                    break 
                 
                 
                 # IF UN VISITED AND NOT PLANNED
@@ -892,16 +900,16 @@ class Navigation:
                 self.path_cells[next.i_tup]=5
                 l.append(next)
                 self.draw_explore_path(next,current,linecolor,linewidth)
+            else:
+                self.mark_as_explored(current,color=linecolor)
                 
-            self.mark_as_explored(current,color=linecolor)
-            
-            if len(l)==0:
-                self.maze.graphic.remove_log()
-                self.maze.graphic.log(f"{X}FS is blocked off")
-                self.maze.graphic.refresh(force=True)
-                return
-            
-            current=l.pop(takei)
+                if len(l)==0:
+                    self.maze.graphic.remove_log()
+                    self.maze.graphic.log(f"{X}FS is blocked off")
+                    self.maze.graphic.refresh(force=True)
+                    return
+                
+                current=l.pop(takei)
             
         self.draw_start_end()
         dist=0
