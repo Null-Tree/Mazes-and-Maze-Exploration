@@ -70,7 +70,7 @@ class Walls2D:
 
 
 class Graphic_IMG:
-    def __init__(self,maze,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,show_text=True,render_window=True):
+    def __init__(self,maze,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,show_text=True,render_window=True,refresh_Hz=20):
         """creates the graphic system"""
         self.prev_t=time.time()
         self.maze=maze
@@ -95,6 +95,7 @@ class Graphic_IMG:
         self.render_window=render_window
         # color=self.bg_rgb
         self.image = Image.new(mode="RGB",size=(self.canvas_width,self.canvas_height,),color=self.bg_rgb)
+        self.refresh_Hz=refresh_Hz
         
 
         if self.render_window:
@@ -173,9 +174,8 @@ class Graphic_IMG:
             self.t=time.time()
             d=self.t-self.prev_t
 
-            self.fps=50
             # print(d)
-            if force or d >1/self.fps:
+            if force or d >1/self.refresh_Hz:
                 self.prev_t=self.t
                 self.photoImage_obj =ImageTk.PhotoImage(self.image)
                 self.image_display.config(image=self.photoImage_obj)
@@ -380,7 +380,7 @@ class Graphic_IMG:
             self.root.mainloop()
 
 class Graphic_TK:
-    def __init__(self,maze,res=10,padding=30,line_width=1,bg="light grey",ani_walls=False,ani_cells=False,show_text=True):
+    def __init__(self,maze,res=10,padding=30,line_width=1,bg="light grey",ani_walls=False,ani_cells=False,show_text=True,refresh_Hz=None):
         """creates the graphic system"""
         self.prev_t=time.time()
         self.maze=maze
@@ -400,6 +400,8 @@ class Graphic_TK:
         
         canvas_width=xdim*res+2*padding
         canvas_height=ydim * res+2*padding
+
+        self.refresh_Hz=refresh_Hz #not supported for this
         
         self.canvas = tk.Canvas(self.root, width=canvas_width, height=canvas_height,background=bg)
         self.canvas.pack()
@@ -451,8 +453,7 @@ class Graphic_TK:
         # self.t=time.time()
         # d=self.t-self.prev_t
 
-        # self.fps=500
-        # if force or d >1/self.fps:
+        # if force or d >1/self.refresh_Hz:
         #     self.prev_t=self.t
         self.root.update()
 
@@ -600,7 +601,7 @@ class Graphic_TK:
 
 
 class Maze2D:
-    def __init__(self,cell_M,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG,render_window=True):
+    def __init__(self,cell_M,res=10,padding=30,line_width=1,bg="grey",ani_walls=False,ani_cells=False,start=None,end=None,draw_explore=True,show_text=True,graphic_cls=Graphic_IMG,render_window=True,refresh_Hz=20):
         """
         initalises a maze system
         
@@ -618,6 +619,7 @@ class Maze2D:
             show_text (bool): choose if text label showing loading and algorithm performance information will be displayed
             graphic_cls (Class): choose which graphical system to use, Graphic_IMG performs better, Graphic_TK is also an option
             render_window (bool): choose whever to show maze in a window, reccom turn this off for big mazes, eg (1000x1000)
+            refresh_Hz (int): refresh rate for onscreen render of maze, only supported for Graphic_IMG, the lower the refreshhz the faster program will run, the higher refresh rate the slower the program, but it will not skip as much animation steps
         
         """
         
@@ -625,7 +627,7 @@ class Maze2D:
         # true if cell is a valid space, false if that space is filled
         self.cells=cell_M
         self.walls=Walls2D(self.cells)
-        self.graphic=graphic_cls(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text,render_window)
+        self.graphic=graphic_cls(self,res,padding,line_width,bg,ani_walls,ani_cells,show_text,render_window,refresh_Hz)
         self.navigation=Navigation(self,start,end,draw_explore)
     
     def get_rand_cord(self):
@@ -721,8 +723,8 @@ class Navigation:
     
     def draw_start_end(self):
         """draws the start and end of maze onto graph"""
-        self.maze.graphic.draw_on_cell(self.start,"circle","red",prop=.9)
-        self.maze.graphic.draw_on_cell(self.end,"circle","green",prop=.9) 
+        self.maze.graphic.draw_on_cell(self.start,"circle","red",prop=1)
+        self.maze.graphic.draw_on_cell(self.end,"circle","green",prop=1) 
         self.maze.graphic.refresh(force=True)
     
     def mark_as_explored(self,cord:Cord,color):
@@ -975,17 +977,18 @@ class Navigation:
                 
                 pqueue.pq_add(next,herustic_dist_total)
                 self.draw_explore_path(next,current,linecolor,linewidth)
+            else:
                 
-            self.mark_as_explored(current,color=linecolor)
-            
-            if (len(pqueue)==0):
-                self.maze.graphic.remove_log()
-                self.maze.graphic.log(f"A* is blocked off")
-                self.maze.graphic.refresh(force=True)
-                return
-            
-            current=pqueue.pq_get()
-            # print(current)
+                self.mark_as_explored(current,color=linecolor)
+                
+                if (len(pqueue)==0):
+                    self.maze.graphic.remove_log()
+                    self.maze.graphic.log(f"A* is blocked off")
+                    self.maze.graphic.refresh(force=True)
+                    return
+                
+                current=pqueue.pq_get()
+                # print(current)
             
         self.draw_start_end()
         # # back track
@@ -1066,16 +1069,17 @@ class Navigation:
                     herustic_dist_total=herustic_function(next,part_start_l[1-side]) 
                     
                     pqueue_l[side].pq_add(next,herustic_dist_total)
-                    self.draw_explore_path(next,current,linecolor,linewidth)                
-                self.mark_as_explored(current,color=linecolor_l[side])
-                
-                if (len(pqueue_l[side])==0):
-                    self.maze.graphic.remove_log()
-                    self.maze.graphic.log(f"Double A* is blocked off")
-                    self.maze.graphic.refresh(force=True)
-                    return
-                
-                current_l[side]=pqueue_l[side].pq_get()
+                    self.draw_explore_path(next,current,linecolor,linewidth) 
+                else:               
+                    self.mark_as_explored(current,color=linecolor_l[side])
+                    
+                    if (len(pqueue_l[side])==0):
+                        self.maze.graphic.remove_log()
+                        self.maze.graphic.log(f"Double A* is blocked off")
+                        self.maze.graphic.refresh(force=True)
+                        return
+                    
+                    current_l[side]=pqueue_l[side].pq_get()
             else:
                 continue
 

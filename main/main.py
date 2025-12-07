@@ -10,7 +10,7 @@ def main():
     # random.seed=seed
     # print("seed=",random.seed)
 
-    xyshape=(140,60)
+    xyshape=(200,80)
     # xyshape=(120,80)
     # xyshape=(1000,1000)
     
@@ -34,7 +34,7 @@ def main():
     m=Maze2D(
                 cell_M=cell_M,
 
-                res=10,
+                res=8,
                 padding=30,
                 line_width=1,
 
@@ -49,7 +49,8 @@ def main():
                 draw_explore=True,
                 show_text=True,
                 graphic_cls=Graphic_IMG,
-                render_window=True
+                render_window=True,
+                refresh_Hz=20
              )
 
 
@@ -74,7 +75,6 @@ def main():
 
     # runs A*
     m.graphic.reset_maze()
-    m.graphic.render_maze()
     m.navigation.A_star()
     # ask()
     m.graphic.save_image()
@@ -82,7 +82,6 @@ def main():
     
     # runs double A*
     m.graphic.reset_maze()
-    m.graphic.render_maze()
     m.navigation.double_A_star()
     
 
