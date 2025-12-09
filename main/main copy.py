@@ -10,12 +10,12 @@ def main():
     # random.seed=seed
     # print("seed=",random.seed)
 
-    xyshape=(200,80)
+    xyshape=(15,15)
     # xyshape=(120,80)
     # xyshape=(1000,1000)
     
-    start=Cord((10,10))
-    end=Cord(xyshape,"xy")-start
+    start=Cord((0,0))
+    end=Cord(xyshape,"xy")-start-Cord((1,1))
     
 
 
@@ -29,14 +29,12 @@ def main():
     # make it a circle lol
     # mid=Cord(xyshape,"xy")/2
     # cell_M=np_circle(i1i2shape,dtype="i1",center=mid,r=30)
-    # start=None
-    # end=None
 
 
     m=Maze2D(
                 cell_M=cell_M,
 
-                res=8,
+                res=10,
                 padding=30,
                 line_width=1,
 
@@ -67,8 +65,8 @@ def main():
     m.navigation.DFS_wallmaker()
     # ask()
     time.sleep(3)
-    
     m.graphic.save_image()
+    
     # runs bfs
     m.graphic.reset_maze()
     m.navigation.Xfs("B")
@@ -77,6 +75,7 @@ def main():
 
     # runs A*
     m.graphic.reset_maze()
+    m.graphic.render_maze()
     m.navigation.A_star()
     # ask()
     m.graphic.save_image()
@@ -84,6 +83,7 @@ def main():
     
     # runs double A*
     m.graphic.reset_maze()
+    m.graphic.render_maze()
     m.navigation.double_A_star()
     
 
