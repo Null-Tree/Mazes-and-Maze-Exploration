@@ -18,13 +18,17 @@ Includes maze, graphic, walls, and navigation class items.
 ## Samples
 
 ![](sample_images/large_unsolved.png)
+
 Generated Maze
 
 ![](sample_images/large_solved.png)
+
 Aforementioned maze, solved using A*
 
 ![](sample_images/vbig_solved.png)
+
 Very big maze (1k by 1k) solved with A*
 
 ![](sample_images/circle_solved.png)
+
 Circular maze
