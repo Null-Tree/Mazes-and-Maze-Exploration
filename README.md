@@ -13,6 +13,27 @@ All functionality is coded as class items in the .py files and may be imported t
 Includes maze, graphic, walls, and navigation class items.
 
 ## Samples
-![Sample maze](sample_images/sample_blank.png)
 
-![Sample maze solved](sample_images/sample_solved.png)
+![](sample_images/large_unsolved.png)
+
+Generated Maze
+
+---
+
+![](sample_images/large_solved.png)
+
+Aforementioned maze, solved using A*
+
+---
+
+![](sample_images/vbig_solved.png)
+
+Very big maze (1k by 1k) solved with A*
+
+---
+
+![](sample_images/circle_solved.png)
+
+Circular maze
+
+---
