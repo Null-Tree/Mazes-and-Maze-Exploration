@@ -5,11 +5,8 @@ Python script that creates mazes of custom sizes and runs common exploration alg
 Uses DFS to create a 'perfect maze'.
 Such that the paths of the maze form a tree (there is only 1 possible path between any two points in the maze).
 
-Requires contents of `support.py`.
+Requires contents of `modules` folder.
 
-## Versions
-`mazesystem.py` uses tkinker canvas items to render (much slower)
-`mazesystem img.py` uses PIL to render images (much much faster).
 
 ## Use as modules
 All functionality is coded as class items in the .py files and may be imported to any python file and used.
